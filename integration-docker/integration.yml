@@ -1,0 +1,14 @@
+integrations:
+  - name: nri-flex
+    config:
+      name: customDocker
+      apis:
+        - name: customDocker
+          commands:
+            - run: docker stats --no-stream --no-trunc | sed 's/\([0-9]\+\)kB/\1KB/g' | sed 's/\([0-9]\+\)\(k\|K\|m\|M\|g\|G\|t\|T\)\?\(i\)\?B/\1\2\3/g' | numfmt --header --field 4,6,8,10,11,13 --from=auto --to=none
+              split: horizontal
+              set_header: [containerId, containerName, cpuPercent, memUsageBytes, memLimitBytes, memPercent, networkRxBytes, networkTxBytes, ioReadBytes, ioWriteBytes]
+              split_by: \s+(/\s+)?
+              row_start: 1
+          perc_to_decimal: true
+

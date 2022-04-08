@@ -1,0 +1,10 @@
+integrations:
+  - name: nri-flex
+    config:
+      name: ups
+      apis:
+        - name: ups
+          commands:
+            - run: upsc ups@localhost:34930
+              split_by: ": "
+

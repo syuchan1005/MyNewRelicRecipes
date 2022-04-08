@@ -1,0 +1,13 @@
+integrations:
+  - name: nri-flex
+    interval: 15m
+    config:
+      name: speedtest
+      apis:
+        - name: speedtest
+          commands:
+            - run: "PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser fast -u --json"
+              timeout: 120000 # 2m
+          strip_keys:
+            - userLocation
+            - userIp

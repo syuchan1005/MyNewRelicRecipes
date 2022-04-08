@@ -1,0 +1,94 @@
+version: "3"
+
+secrets:
+  nut-upsd-password:
+    file: ./nut-upsd/nut-upsd-password
+
+services:
+  infra:
+    restart: unless-stopped
+    image: newrelic/infrastructure:1.24.0
+    network_mode: host
+    cap_add:
+      - SYS_PTRACE
+    privileged: true
+    pid: host
+    volumes:
+      - "/:/host:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - NRIA_LICENSE_KEY
+  integration-speedtest:
+    restart: unless-stopped
+    build: ./integration-speedtest
+    network_mode: host # For hostname
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    privileged: true
+    pid: host
+    volumes:
+      - /:/host:ro
+    environment:
+      - NRIA_LICENSE_KEY
+  upsd:
+    build: ./nut-upsd
+    restart: unless-stopped
+    secrets:
+      - nut-upsd-password
+    environment:
+      SERIAL: AS1211214906
+    volumes:
+      - ./nut-upsd/ups.conf:/etc/nut/local/ups.conf:ro
+      - ./nut-upsd/upsmon.conf:/etc/nut/local/upsmon.conf:ro
+      - ./nut-upsd/upsnotify-discord.sh:/upsnotify-discord.sh
+    privileged: true
+    ports:
+      - 34930:3493
+  integration-ups:
+    restart: unless-stopped
+    build: ./integration-ups
+    network_mode: host
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
+    pid: host
+    volumes:
+      - /:/host:ro
+    depends_on:
+      - upsd
+    environment:
+      - NRIA_LICENSE_KEY
+  integration-docker:
+    restart: unless-stopped
+    build: ./integration-docker
+    network_mode: host # For hostname
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
+    pid: host
+    volumes:
+      - /:/host:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - NRIA_LICENSE_KEY
+  metric-storage:
+    restart: unless-stopped
+    build: ./metric-storage
+    network_mode: host # For hostname
+    privileged: true # For ssacli
+    environment:
+      - NRIA_LICENSE_KEY
+  integration-plug:
+    restart: unless-stopped
+    image: newrelic/infrastructure-bundle
+    network_mode: host
+    pid: host
+    privileged: true
+    volumes:
+      - "/:/host:ro"
+      - ./integration-plug/integration.yml:/etc/newrelic-infra/integrations.d/docker-config.yml
+    environment:
+      - NRIA_LICENSE_KEY
+      - SWITCHBOT_API_TOKEN
+      - SWITCHBOT_PLUG_MINI_DEVICE_ID    
